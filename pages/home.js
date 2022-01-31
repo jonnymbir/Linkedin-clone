@@ -6,8 +6,9 @@ import OndemandVideoSharpIcon from "@mui/icons-material/OndemandVideoSharp";
 import BusinessCenterIcon from "@mui/icons-material/BusinessCenter";
 import ArrowForwardIosRoundedIcon from "@mui/icons-material/ArrowForwardIosRounded";
 import Head from "next/head";
+import { getProviders, signIn } from "next-auth/react";
 
-function Home() {
+function Home({providers}) {
   return (
     <div className="space-y-10 relative">
       <Head>
@@ -27,11 +28,18 @@ function Home() {
             <HeaderLink Icon={BusinessCenterIcon} text="Jobs" />
           </div>
 
-          <div className="pl-4">
-            <button className="text-blue-700 font-semibold rounded-full border-2 border-blue-700 px-5 py-1.5 transition-all hover:border-2">
-              Sign In
-            </button>
-          </div>
+          {Object.values(providers).map((provider) => (
+            <div key={provider.name}>
+              <div className="pl-4">
+                <button
+                  className="text-blue-700 font-semibold rounded-full border border-blue-700 px-5 py-1.5 transition-all hover:border-2"
+                  onClick={() => signIn(provider.id, { callbackUrl: "/" })}
+                >
+                  Sign in
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       </header>
 
@@ -65,3 +73,13 @@ function Home() {
 }
 
 export default Home;
+
+export async function getServerSideProps(context) {
+    const providers = await getProviders();
+  
+    return {
+      props: {
+        providers,
+      },
+    };
+  }
