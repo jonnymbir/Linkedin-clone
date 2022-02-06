@@ -8,19 +8,22 @@ import Feed from "../components/Feed";
 import Header from "../components/Header";
 import Modal from "../components/Modal";
 import Sidebar from "../components/Sidebar";
+import Widgets from "../components/Widgets";
+import { connectToDatabase } from "../utils/mongodb";
 
-export default function Home() {
+export default function Home({ posts, articles }) {
+  console.log(articles);
   const [modalOpen, setModalOpen] = useRecoilState(modalState);
   const [modalType, setModalType] = useRecoilState(modalTypeState);
 
   const router = useRouter();
   const { status } = useSession({
     required: true,
-    onUnauthenticated(){
+    onUnauthenticated() {
       router.push("/home");
-    }
+    },
   });
-  
+
   return (
     <div className="bg-[#F3F2EF] dark:bg-black dar:text-white h-screen overflow-y-scroll md:space-y-6">
       <Head>
@@ -33,35 +36,53 @@ export default function Home() {
 
       <main className="flex justify-center gap-x-5 px-4 sm:px-12">
         <div className="flex flex-col md:flex-row gap-5">
-          <Sidebar/>
-          <Feed/>
+          <Sidebar />
+          <Feed posts={posts} />
         </div>
-
+        <Widgets articles={articles}/>
         <AnimatePresence>
           {modalOpen && (
             <Modal handleClose={() => setModalOpen(false)} type={modalType} />
           )}
         </AnimatePresence>
-
       </main>
     </div>
   );
 }
 
-export async function getServerSideProps(context){
+export async function getServerSideProps(context) {
   const session = await getSession(context);
-  if(!session){
+  if (!session) {
     return {
       redirect: {
         permanent: false,
-        destination: "/home"
-      }
-    }
+        destination: "/home",
+      },
+    };
   }
 
+  const { db } = await connectToDatabase();
+  const posts = await db
+    .collection("posts")
+    .find()
+    .sort({ timestamp: -1 })
+    .toArray();
+
+
+
   return {
-    props:{
+    props: {
       session,
-    }
-  }
+      articles: results.articles,
+      posts: posts.map((post) => ({
+        _id: post._id.toString(),
+        input: post.input,
+        photoUrl: post.photoUrl,
+        username: post.username,
+        email: post.email,
+        userImg: post.userImg,
+        createdAt: post.createdAt,
+      })),
+    },
+  };
 }
